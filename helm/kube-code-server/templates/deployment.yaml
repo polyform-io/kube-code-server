@@ -12,6 +12,9 @@ spec:
         {{- include "kube-code-server.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/secret-env: {{ include (print $.Template.BasePath "/secrets-env.yaml") . | sha256sum }}
+        checksum/addtional-configmaps: {{ include (print $.Template.BasePath "/additional-configmaps.yaml") . | sha256sum }}
       labels:
       {{- include "kube-code-server.selectorLabels" . | nindent 8 }}
     spec:
@@ -38,6 +41,34 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /home
+        - name: customization
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SERVICE_URL
+              value: https://open-vsx.org/vscode/gallery
+            - name: ITEM_URL
+              value: https://open-vsx.org/vscode/item
+          command:
+            - sh
+            - -c
+            - |
+              /./scripts/setup-tools.sh
+              code-server --install-extension ms-python.python
+              code-server --install-extension golang.Go
+          volumeMounts:
+            - name: data
+              mountPath: /home/coder
+            {{- range $cm := .Values.additionalConfigMaps }}
+            - name: {{ $cm.name }}-{{ $.Values.fullnameOverride }}
+              mountPath: {{ $cm.mountPath | quote }}
+            {{- end }}
+          {{- range .Values.extraConfigmapMounts }}
+            - name: {{ . }}
+              mountPath: /custom-configmaps/{{ . }}
+          {{- end }}
+
+
 {{- if .Values.extraInitContainers }}
 {{ tpl .Values.extraInitContainers . | indent 6}}
 {{- end }}
@@ -83,12 +114,10 @@ spec:
         {{- end }}
           volumeMounts:
             - name: data
-              mountPath: /home
+              mountPath: /home/coder
           {{- range .Values.extraConfigmapMounts }}
-            - name: {{ .name }}
-              mountPath: {{ .mountPath }}
-              subPath: {{ .subPath | default "" }}
-              readOnly: {{ .readOnly }}
+            - name: {{ . }}
+              mountPath: /custom-configmaps/{{ . }}
           {{- end }}
           {{- range .Values.extraSecretMounts }}
             - name: {{ .name }}
@@ -101,6 +130,10 @@ spec:
               subPath: {{ .subPath | default "" }}
               readOnly: {{ .readOnly }}
           {{- end }}
+            {{- range $cm := .Values.additionalConfigMaps }}
+            - name: {{ $cm.name }}-{{ $.Values.fullnameOverride }}
+              mountPath: {{ $cm.mountPath | quote }}
+            {{- end }}
           ports:
             - name: http
               containerPort: 8080
@@ -127,8 +160,21 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
     {{- end }}
+      {{- if .Values.serviceAccount.create }}
       serviceAccountName: {{ template "kube-code-server.fullname" . }}
+      {{- else  }}
+      {{- if .Values.serviceAccount.name }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- end}}
       volumes:
+        {{- range $cm := .Values.additionalConfigMaps }}
+        - name: {{ $cm.name }}-{{ $.Values.fullnameOverride }}
+          configMap:
+            name: {{ $cm.name }}-{{ $.Values.fullnameOverride }}
+            defaultMode: {{ $cm.defaultMode }}
+        {{- end }}
+
       {{- range .Values.extraSecretMounts }}
         - name: {{ .name }}
           secret:
@@ -136,10 +182,9 @@ spec:
             defaultMode: {{ .defaultMode }}
       {{- end }}
       {{- range .Values.extraConfigmapMounts }}
-        - name: {{ .name }}
+        - name: {{ . }}
           configMap:
-            name: {{ .configMap }}
-            defaultMode: {{ .defaultMode }}
+            name: {{ . }}
       {{- end }}
       {{- range .Values.extraVolumeMounts }}
         - name: {{ .name }}

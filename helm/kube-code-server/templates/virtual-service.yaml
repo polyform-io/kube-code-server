@@ -6,7 +6,7 @@ metadata:
     {{- include "kube-code-server.labels" . | nindent 4 }}
 spec:
   hosts:
-    - memo-machine.tool.engineering.int.firefly.exchange
+    - "{{ include "kube-code-server.fullname" . }}.{{ .Values.mainDomain }}"
   gateways:
     - 'istio-system/internal-gateway'
   http:

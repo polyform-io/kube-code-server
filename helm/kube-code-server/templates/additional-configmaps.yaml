@@ -1,0 +1,12 @@
+{{- range $configMaps := .Values.additionalConfigMaps }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ $configMaps.name }}-{{ $.Values.fullnameOverride }}"
+data:
+  {{- range $d := $configMaps.data }}
+  {{ $d.filename | quote }}: |-
+    {{  $d.contents | nindent 4 }}
+  {{- end }}
+---
+{{- end }}

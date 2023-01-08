@@ -1,7 +1,12 @@
 FROM codercom/code-server:latest
 
-COPY ./setup.sh ./setup.sh
+# COPY ./setup.sh ./setup.sh
 
+RUN mkdir /build-temp
+RUN cd /build-temp
+RUN curl  https://download.docker.com/linux/static/stable/x86_64/docker-19.03.9.tgz --output docker.tgz
+RUN tar xzvf docker.tgz
+RUN sudo cp docker/docker /usr/local/bin
 
 RUN sudo apt install curl -y
 RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"

@@ -2,6 +2,7 @@
 
 ARG BASE=debian:11
 FROM scratch AS packages
+COPY release-packages/code-server*.deb /tmp/
 FROM $BASE
 
 RUN apt-get update \
@@ -24,7 +25,6 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 RUN sudo apt install curl -y
-RUN curl -L https://github.com/coder/code-server/releases/download/v4.9.1/code-server_4.9.1_amd64.deb -o /tmp/code-server_4.9.1_amd64.deb
 
 RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
@@ -45,7 +45,7 @@ RUN brew install  go
 RUN brew install  tfenv
 
 RUN sudo mkdir /docker-build-temp/
-RUN curl https://download.docker.com/linux/debian/dists/buster/pool/stable/amd64/docker-ce-cli_20.10.8~3-0~debian-buster_amd64.deb --output /docker-build-temp/docker.deb
+RUN curl -L https://download.docker.com/linux/debian/dists/buster/pool/stable/amd64/docker-ce-cli_20.10.8~3-0~debian-buster_amd64.deb --output /docker-build-temp/docker.deb
 RUN sudo dpkg -i /docker-build-temp/docker.deb
 RUN sudo rm -rf /docker-build-temp/
 # https://wiki.debian.org/Locale#Manually

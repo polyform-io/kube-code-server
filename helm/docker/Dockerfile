@@ -43,6 +43,8 @@ RUN brew install  checkov
 RUN brew install  terragrunt
 RUN brew install  go
 RUN brew install  tfenv
+RUN brew install  k9s
+RUN brew install  vim
 
 RUN sudo mkdir /docker-build-temp/
 RUN curl -L https://download.docker.com/linux/debian/dists/buster/pool/stable/amd64/docker-ce-cli_20.10.8~3-0~debian-buster_amd64.deb --output /docker-build-temp/docker.deb
@@ -73,7 +75,7 @@ RUN brew cleanup
 RUN sudo apt-get clean
 # Allow users to have scripts run on container startup to prepare workspace.
 # https://github.com/coder/code-server/issues/5177
-ENV ENTRYPOINTD=${HOME}/entrypoint.d
+ENV ENTRYPOINTD=/startup-scripts
 
 EXPOSE 8080
 # This way, if someone sets $DOCKER_USER, docker-exec will still work as
